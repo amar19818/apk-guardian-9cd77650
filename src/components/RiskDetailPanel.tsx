@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Shield, Bug, DollarSign, Eye } from "lucide-react";
 import type { RiskParameters } from "@/lib/api";
 import { cn } from "@/lib/utils";
