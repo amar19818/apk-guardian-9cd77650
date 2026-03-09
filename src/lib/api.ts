@@ -1,146 +1,265 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-export interface ApkInfo {
+// === Meta ===
+export interface Meta {
+  analysisId: string;
   fileName: string;
   fileSizeBytes: number;
   fileSizeMB: number;
+  analysedAt: string;
+  analysisTimeMs: number;
+}
+
+// === App Info ===
+export interface AppInfo {
   packageName: string;
   versionName: string;
-  totalFilesInApk: number;
-  dexFileCount: number;
+  versionCode: number;
+  minSdk: number;
+  targetSdk: number;
+  minAndroidVersion: string;
+  targetAndroidVersion: string;
+  totalFiles: number;
+  dexCount: number;
   nativeLibCount: number;
-  assetsCount: number;
+  assetCount: number;
   isSigned: boolean;
+  components: {
+    activities: string[];
+    services: string[];
+    receivers: string[];
+    providers: string[];
+    features: string[];
+  };
 }
 
-export interface RiskLevel {
-  score: number;
-  label: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE";
-}
-
-export interface RiskScore extends RiskLevel {
-  triggeredBy?: string[];
-  reasons?: string[];
-}
-
-export interface Permission {
-  permission: string;
-  level: string;
-  category: string;
-  description: string;
-  riskReason: string;
-  necessary: boolean;
-}
-
-export interface DangerousCombination {
-  label: string;
-  description: string;
-  permissions: string[];
-}
-
-export interface NetworkIndicators {
-  hardcodedUrls: string[];
-  hardcodedIPs: string[];
-  suspiciousDomains: string[];
-}
-
-export interface AnalysisSummary {
-  totalPermissions: number;
-  unnecessaryPermissions: number;
-  criticalPermissions: number;
-  dangerousPermissions: number;
-  dangerousCombinations: number;
-  topRiskAreas?: { category: string; score: number; label: string }[];
+// === Overall Risk ===
+export interface OverallRisk {
   overallScore: number;
-  overallLabel: string;
+  riskLevel: string;
+  verdict: string;
+  color: string;
+  recommendation: string;
+  breakdown: {
+    securityVulnerabilities: number;
+    privacyBreach: number;
+    malwareBehaviour: number;
+    informationLeak: number;
+    financialRisk: number;
+  };
+}
+
+// === Risk Parameter base ===
+export interface RiskParameterBase {
+  score: number;
+  level: string;
+  summary: string;
+}
+
+// === Privacy Breach ===
+export interface PrivacyBreach extends RiskParameterBase {
+  breachCount: number;
+  details: {
+    score: number;
+    level: string;
+    breachCount: number;
+    breaches: {
+      type: string;
+      severity: string;
+      description: string;
+      triggeredBy: string[];
+    }[];
+    affectedCategories: string[];
+    details: Record<string, string[]>;
+  };
+}
+
+// === Information Leak ===
+export interface InformationLeak extends RiskParameterBase {
+  findingCount: number;
+  details: {
+    score: number;
+    level: string;
+    findingCount: number;
+    findings: {
+      type: string;
+      severity: string;
+      pattern: string;
+      description: string;
+      location: string;
+      examples?: string[];
+      count?: number;
+    }[];
+    networkEndpoints: string[];
+    suspiciousUrls: string[];
+  };
+}
+
+// === Security Vulnerabilities ===
+export interface SecurityVulnerabilities extends RiskParameterBase {
+  vulnerabilityCount: number;
+  details: {
+    score: number;
+    level: string;
+    vulnerabilityCount: number;
+    vulnerabilities: {
+      id: string;
+      type: string;
+      severity: string;
+      description: string;
+      recommendation: string;
+      cvssScore: number;
+    }[];
+  };
+}
+
+// === Financial Risk ===
+export interface FinancialRisk extends RiskParameterBase {
+  riskCount: number;
+  details: {
+    score: number;
+    level: string;
+    riskCount: number;
+    risks: {
+      id: string;
+      type: string;
+      severity: string;
+      description: string;
+      howItHurtsYou: string;
+      recommendation: string;
+    }[];
+  };
+}
+
+// === Malware Behaviour ===
+export interface MalwareBehaviour extends RiskParameterBase {
+  malwareProbability: string;
+  indicatorCount: number;
+  details: {
+    score: number;
+    level: string;
+    malwareProbability: string;
+    indicatorCount: number;
+    indicators: {
+      id: string;
+      type: string;
+      severity: string;
+      confidence: string;
+      description: string;
+      recommendation: string;
+    }[];
+  };
+}
+
+// === Risk Parameters ===
+export interface RiskParameters {
+  privacyBreach: PrivacyBreach;
+  informationLeak: InformationLeak;
+  securityVulnerabilities: SecurityVulnerabilities;
+  financialRisk: FinancialRisk;
+  malwareBehaviour: MalwareBehaviour;
+}
+
+// === Permissions ===
+export interface PermissionEntry {
+  permission: string;
+  shortName: string;
+  level?: string;
+  category: string;
+  risk: string;
+  description: string;
+  reason?: string;
+}
+
+export interface Permissions {
+  total: number;
+  riskScore: number;
+  counts: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  unnecessary: PermissionEntry[];
+  dangerous: PermissionEntry[];
+  normal: PermissionEntry[];
+  signature: PermissionEntry[];
+  unknown: PermissionEntry[];
+  categoryBreakdown: Record<string, PermissionEntry[]>;
+}
+
+// === Full Analysis Result ===
+export interface AnalysisResult {
+  meta: Meta;
+  appInfo: AppInfo;
+  overallRisk: OverallRisk;
+  riskParameters: RiskParameters;
+  permissions: Permissions;
+}
+
+// === Report List Item ===
+export interface ReportListItem {
+  analysisId: string;
+  fileName: string;
+  fileSizeMB: number;
+  analysedAt: string;
+  packageName: string;
+  overallScore: number;
+  riskLevel: string;
   verdict: string;
 }
 
-export interface AnalysisResult {
-  analysisId: string;
-  status: string;
-  analyzedAt: string;
-  processingTimeMs: number;
-  apkInfo: ApkInfo;
-  overallRisk: RiskLevel & { verdict: string };
-  riskScores: {
-    privacyBreach: RiskScore;
-    informationLeakage: RiskScore;
-    deviceControl: RiskScore;
-    networkExfiltration: RiskScore;
-    malwareProbability: RiskScore;
-  };
-  permissions: {
-    total: number;
-    unnecessary: string[];
-    byCriticality: Record<string, string[]>;
-    all: Permission[];
-  };
-  dangerousCombinations: DangerousCombination[];
-  networkIndicators: NetworkIndicators;
-  filesAnalysis: {
-    dexFiles: { name: string; size: number }[];
-    nativeLibraries: { name: string; size: number; arch: string }[];
-    suspiciousFiles: { name: string; size: number }[];
-    signingFiles: string[];
-    assets: string[];
-  };
-  summary: AnalysisSummary;
-}
-
+// === API response wrapper ===
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json();
   if (!data.success) throw new Error(data.message || "Request failed");
   return data.data ?? data;
 }
 
-export async function uploadApk(file: File): Promise<AnalysisResult> {
+// === Endpoints ===
+
+export async function analyseApk(file: File): Promise<AnalysisResult> {
   const formData = new FormData();
   formData.append("apk", file);
-  const res = await fetch(`${API_BASE}/api/analyse/upload`, {
+  const res = await fetch(`${API_BASE}/api/apk/analyse`, {
     method: "POST",
     body: formData,
   });
   return handleResponse<AnalysisResult>(res);
 }
 
-export async function getAnalysis(id: string): Promise<AnalysisResult> {
-  const res = await fetch(`${API_BASE}/api/analyse/${id}`);
+export async function listReports(): Promise<{ total: number; reports: ReportListItem[] }> {
+  const res = await fetch(`${API_BASE}/api/report/`);
+  return handleResponse(res);
+}
+
+export async function getReport(id: string): Promise<AnalysisResult> {
+  const res = await fetch(`${API_BASE}/api/report/${id}`);
   return handleResponse<AnalysisResult>(res);
 }
 
-export async function getRiskScores(id: string) {
-  const res = await fetch(`${API_BASE}/api/analyse/${id}/risk-scores`);
+export async function getReportSummary(id: string) {
+  const res = await fetch(`${API_BASE}/api/report/${id}/summary`);
   return handleResponse(res);
 }
 
-export async function getPermissions(id: string) {
-  const res = await fetch(`${API_BASE}/api/analyse/${id}/permissions`);
+export async function deleteReport(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/report/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.message || "Delete failed");
+}
+
+export async function listKnownPermissions(params?: { category?: string; risk?: string; level?: string }) {
+  const query = new URLSearchParams();
+  if (params?.category) query.set("category", params.category);
+  if (params?.risk) query.set("risk", params.risk);
+  if (params?.level) query.set("level", params.level);
+  const qs = query.toString();
+  const res = await fetch(`${API_BASE}/api/apk/permissions${qs ? `?${qs}` : ""}`);
   return handleResponse(res);
 }
 
-export async function getNetworkIndicators(id: string) {
-  const res = await fetch(`${API_BASE}/api/analyse/${id}/network`);
-  return handleResponse(res);
-}
-
-export async function getSummary(id: string) {
-  const res = await fetch(`${API_BASE}/api/analyse/${id}/summary`);
-  return handleResponse(res);
-}
-
-export async function downloadTextReport(id: string) {
-  const res = await fetch(`${API_BASE}/api/report/${id}`);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `apk-report-${id}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-export async function getJsonReport(id: string) {
-  const res = await fetch(`${API_BASE}/api/report/${id}/json`);
-  return handleResponse(res);
+export async function healthCheck() {
+  const res = await fetch(`${API_BASE}/api/health`);
+  return res.json();
 }
