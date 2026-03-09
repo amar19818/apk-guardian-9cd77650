@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Shield, Bug, DollarSign, Eye } from "lucide-react";
 import type { RiskParameters } from "@/lib/api";
